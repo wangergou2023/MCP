@@ -1,12 +1,8 @@
 {
   "mcpServers": {
-    "sqlite": {
+    "time": {
       "command": "uvx",
-      "args": ["mcp-server-sqlite", "--db-path", "./test.db"]
-    },
-    "puppeteer": {
-      "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-puppeteer"]
+      "args": ["mcp-server-time", "--local-timezone=America/New_York"]
     }
   }
 }
