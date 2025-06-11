@@ -10,6 +10,7 @@ import httpx
 from dotenv import load_dotenv
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
+from openai import OpenAI
 
 # Configure logging
 logging.basicConfig(
@@ -206,43 +207,21 @@ class LLMClient:
         messages: 聊天历史，格式为列表（每条是字典）
         返回：大模型回复内容（字符串）
         """
-        url = "https://llxspace.shop/v1/chat/completions"  # LLM服务接口地址
-
-        headers = {
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {self.api_key}",   # 带上API key
-        }
-        payload = {
-            "messages": messages,  # 聊天上下文
-            "model": "gpt-4o-mini",  # 指定模型
-            "temperature": 0.7,
-            "max_tokens": 4096,
-            "top_p": 1,
-            "stream": False,
-            "stop": None,
-        }
-
+        client = OpenAI(
+            api_key=self.api_key,
+            base_url="https://llxspace.shop/v1"
+        )
+        
         try:
-            with httpx.Client() as client:
-                response = client.post(url, headers=headers, json=payload)  # 发送请求
-                response.raise_for_status()  # HTTP错误直接抛异常
-                data = response.json()
-                return data["choices"][0]["message"]["content"]  # 取出大模型回复内容
-
-        except httpx.RequestError as e:
-            # 请求失败时记录日志，返回错误提示
+            completion = client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=messages
+            )
+            return completion.choices[0].message.content
+        except Exception as e:
             error_message = f"Error getting LLM response: {str(e)}"
             logging.error(error_message)
-
-            if isinstance(e, httpx.HTTPStatusError):
-                status_code = e.response.status_code
-                logging.error(f"Status code: {status_code}")
-                logging.error(f"Response details: {e.response.text}")
-
-            return (
-                f"I encountered an error: {error_message}. "
-                "Please try again or rephrase your request."
-            )
+            return f"I encountered an error: {error_message}. Please try again or rephrase your request."
 
 
 class ChatSession:
@@ -346,6 +325,10 @@ class ChatSession:
             )
 
             messages = [{"role": "system", "content": system_message}]
+            client = OpenAI(
+                api_key=self.llm_client.api_key,  # 使用配置的API key初始化客户端
+                base_url="https://llxspace.shop/v1"  # 设置自定义API端点
+            )
 
             # 主循环：不停等待用户输入
             while True:
@@ -357,7 +340,12 @@ class ChatSession:
 
                     messages.append({"role": "user", "content": user_input})
 
-                    llm_response = self.llm_client.get_response(messages)   # 让LLM回复
+                    # 使用OpenAI客户端直接获取响应
+                    completion = client.chat.completions.create(
+                        model="gpt-4o-mini",
+                        messages=messages
+                    )
+                    llm_response = completion.choices[0].message.content
                     logging.info("\nAssistant: %s", llm_response)
 
                     result = await self.process_llm_response(llm_response)  # 判断是否要调工具
@@ -367,7 +355,11 @@ class ChatSession:
                         messages.append({"role": "assistant", "content": llm_response})
                         messages.append({"role": "system", "content": result})
 
-                        final_response = self.llm_client.get_response(messages)
+                        final_completion = client.chat.completions.create(
+                            model="gpt-4o-mini",
+                            messages=messages
+                        )
+                        final_response = final_completion.choices[0].message.content
                         logging.info("\n最终回复: %s", final_response)
                         messages.append(
                             {"role": "assistant", "content": final_response}
