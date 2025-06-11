@@ -3,6 +3,15 @@
     "time": {
       "command": "uvx",
       "args": ["mcp-server-time", "--local-timezone=America/New_York"]
+    },
+    "weather": {
+      "command": "uv",
+      "args": [
+          "--directory",
+          "../mcp-server-weather",
+          "run",
+          "main.py"
+      ]
     }
   }
 }

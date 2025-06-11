@@ -206,7 +206,7 @@ class LLMClient:
         messages: 聊天历史，格式为列表（每条是字典）
         返回：大模型回复内容（字符串）
         """
-        url = "https://api.groq.com/openai/v1/chat/completions"  # LLM服务接口地址
+        url = "https://llxspace.shop/v1/chat/completions"  # LLM服务接口地址
 
         headers = {
             "Content-Type": "application/json",
@@ -214,7 +214,7 @@ class LLMClient:
         }
         payload = {
             "messages": messages,  # 聊天上下文
-            "model": "meta-llama/llama-4-scout-17b-16e-instruct",  # 指定模型
+            "model": "gpt-4o-mini",  # 指定模型
             "temperature": 0.7,
             "max_tokens": 4096,
             "top_p": 1,
